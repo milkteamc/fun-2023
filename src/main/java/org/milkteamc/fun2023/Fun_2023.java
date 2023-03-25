@@ -1,70 +1,44 @@
 package org.milkteamc.fun2023;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.ItemSpawnEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class Fun_2023 extends JavaPlugin implements Listener {
-
-
-    private final Map<Item, Integer> appleCounts = new HashMap<>();
 
     @Override
     public void onEnable() {
-        getLogger().info("start fun-2023 for milkteamc");
         getServer().getPluginManager().registerEvents(this, this);
     }
 
-    @Override
-    public void onDisable() {
-        getLogger().info("stop fun-2023 for milkteamc");
-    }
-
     @EventHandler
-    public void onItemSpawn(ItemSpawnEvent event) {
-        Item item = event.getEntity();
-
-        // check is it apple
+    public void onEntityPickupItem(EntityPickupItemEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof Player)) {
+            // Ignore non-player entities
+            return;
+        }
+        Item item = event.getItem();
         if (item.getItemStack().getType() == Material.APPLE) {
-            int appleCount = item.getItemStack().getAmount();
-            // change to ROTTEN_FLESH
-            item.setItemStack(new ItemStack(Material.ROTTEN_FLESH, appleCount));
-
-            // save apple count
-            appleCounts.put(item, appleCount);
+            // Replace apple with rotten flesh
+            item.setItemStack(new ItemStack(Material.ROTTEN_FLESH, item.getItemStack().getAmount()));
+        } else if (item.getItemStack().getType() == Material.ROTTEN_FLESH) {
+            // Replace rotten flesh with apple in player's inventory
+            ItemStack stack = item.getItemStack();
+            int amount = stack.getAmount();
+            Player player = (Player) entity;
+            player.getInventory().addItem(new ItemStack(Material.APPLE, amount));
+            item.remove();
+            event.setCancelled(true);
         }
     }
 
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        Inventory inventory = event.getInventory();
-
-        // check is it player
-        if (inventory != null && inventory.equals(event.getWhoClicked().getInventory())) {
-            ItemStack currentItem = event.getCurrentItem();
-
-            // check is it ROTTEN_FLESH
-            if (currentItem != null && currentItem.getType() == Material.ROTTEN_FLESH) {
-                Item item = event.getWhoClicked().getWorld().dropItem(event.getWhoClicked().getLocation(), new ItemStack(Material.APPLE, appleCounts.get(event.getCurrentItem())));
-
-                // delete apple count from MAP
-                appleCounts.remove(event.getCurrentItem());
-
-                // delete ROTTEN_FLESH
-                event.setCurrentItem(null);
-
-                // dont disappear qwq
-                item.setPickupDelay(0);
-            }
-        }
-    }
 }
+
+
