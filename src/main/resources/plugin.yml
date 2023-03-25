@@ -1,0 +1,4 @@
+name: fun-2023
+version: '${version}'
+main: org.milkteamc.fun2023.Fun_2023
+api-version: 1.19
